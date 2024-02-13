@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prestop-test
+  labels:
+    app: prestop-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prestop-test
+  template:
+    metadata:
+      labels:
+        app: prestop-test
+    spec:
+      terminationGracePeriodSeconds: 240
+      containers:
+      - name: main
+        image: gcr.io/grpc-testing/rbellevi/pre-stop-hook-test:6
+        lifecycle:
+          preStop:
+            exec:
+              command: ["bash", "-c", "while ! [ -e /hook/take_me ]; do sleep 1; done"]
+        volumeMounts:
+        - mountPath: /hook
+          name: hook-volume
+      - name: hook
+        image: gcr.io/grpc-testing/rbellevi/pre-stop-hook-test:6
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/prestop.sh"]
+        volumeMounts:
+        - mountPath: /hook
+          name: hook-volume
+      volumes:
+      - name: hook-volume
+        emptyDir: {}
